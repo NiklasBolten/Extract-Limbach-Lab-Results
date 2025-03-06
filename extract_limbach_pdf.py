@@ -8,11 +8,6 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument
 
-    # TODO: compare patient infos with own db patient infos
-
-    # TODO: compare units, reference ranges and comments
-    # with corresponding parameters in own db
-
 def main():
     # Validate the pdf_path and output_path
     if len(sys.argv) != 3:
@@ -49,18 +44,6 @@ def main():
                 if isinstance(element, LTTextBoxHorizontal):
                     for text_line in element:
                         text_lines.append(text_line)
-
-            # Check for multi-page lab results
-            # TODO: handle multi-page lab results better!
-            # Step 1: Check if Limbach declared the current page as a multi-page lab result ("Seite 1 von n")
-            # for text_line in text_lines:
-            #     x0, y0, _, _ = text_line.bbox  # Coordinates of the text
-            #     if x0 >= 575 and x0 <= 576 and y0 >= 486 and text_line.get_text().strip() != '1':
-            #         n = text_line.get_text().strip()
-            #         output_string.write(f"{n}-page lab result detected!\n")
-                    # Step 2: If they did, store the current and the next n - 1 pages in a list
-                    
-                    # Step 3: 
 
             # Extract patient infos and lab results
             for text_line in text_lines:
@@ -102,7 +85,7 @@ def extract_patient_infos(text_line, x0):
             output = (f"Vorname: {firstname}\nNachname: {surname}\n")
         else:
             output = (f"WARNING: Vorname or Nachname: None\n")
-            # Critical Error?
+
     elif x0 >= 361 and x0 <= 362:
         birth_gender = text_line.get_text().strip()
         birth_gender_split = birth_gender.split('/')
@@ -138,8 +121,10 @@ def extract_lab_results(text_line, x0, y0, text_lines):
                     unit = value_unit_split[1]
                     output = (f"{output}Value: {value}\nUnit: {unit}\n")
                 else:
-                    output = (f"{output}Value: {value_unit}\n")
-                    output = (f"{output}WARNING: Unit: None\n")
+                    value = value_unit
+                    unit = "None"
+                    output = (f"{output}Value: {value}\n")
+                    output = (f"{output}Unit: {unit}\n")
 
                 # check for reference ranges
                 # if there is a (reference_range_)line on a similar y-coordinate and to the right of the 
@@ -151,8 +136,8 @@ def extract_lab_results(text_line, x0, y0, text_lines):
                         reference_range = reference_range_line.get_text().strip()
                         output = (f"{output}Reference Range: {reference_range}\n")
                         return output
-                
-                output = (f"{output}WARNING: Reference Range: None\n")
+                reference_range = "None"
+                output = (f"{output}Reference Range: {reference_range}\n")
                 return output
     
         # if the text is not a parameter, it is a comment
