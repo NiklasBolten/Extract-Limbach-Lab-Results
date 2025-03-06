@@ -25,6 +25,7 @@ def main():
         sys.exit(1)
 
     output_string = StringIO()
+    lab_results = [] # list of json formatted outputs per page
     with open(input_path, 'rb') as in_file:
         parser = PDFParser(in_file)
         doc = PDFDocument(parser)
@@ -46,12 +47,18 @@ def main():
                         text_lines.append(text_line)
 
             # Extract patient infos and lab results
+            # Initialize json_output
+            lab_result = {} #json formatted output per page
             for text_line in text_lines:
                 x0, y0, _, _ = text_line.bbox  # Coordinates of the text
                 if y0 >= 514 and y0 <= 515:  # Check if the text is in the range of the patient infos
-                    output_string.write(extract_patient_infos(text_line, x0))
+                #    output_string.write(extract_patient_infos(text_line, x0))
+                    lab_result.update(extract_patient_infos(text_line, x0))
+                    # print (f"\nTEST {lab_result}")
                 elif y0 < 461:  # Check if the text is in the range of the lab results, beneath "Untersuchung"
                     output_string.write(extract_lab_results(text_line, x0, y0, text_lines))
+            lab_results.append(lab_result)
+            print(json.dumps(lab_results, ensure_ascii=False, indent=4))
 
     # Write the extracted text to the output file
     lines = output_string.getvalue().split('\n')
@@ -62,7 +69,9 @@ def main():
             while lines[i + 1].startswith("Comment: "):
                 lines[i] = lines[i] + '\n' + lines[i + 1][9:]
                 lines.pop(i + 1)
-        print(f"{i}: {lines[i]}")
+           #     json_output["Comment"] = json.dumps(lines[i], ensure_ascii=False)
+           #     print(json_output)
+        # print(f"{i}: {lines[i]}")
         i += 1
     
 
@@ -76,15 +85,16 @@ def main():
 
 
 def extract_patient_infos(text_line, x0):
-    output = ''
+    output = {}
     if x0 >= 55 and x0 <= 56:
         name_split = text_line.get_text().strip().split(',') # splits the name at the comma
         if len(name_split) == 2:
             firstname = name_split[1].strip() # strips the whitespace after the comma
             surname = name_split[0]
-            output = (f"Vorname: {firstname}\nNachname: {surname}\n")
+            output["Vorname"] = firstname
+            output["Nachname"] = surname
         else:
-            output = (f"WARNING: Vorname or Nachname: None\n")
+            return 1
 
     elif x0 >= 361 and x0 <= 362:
         birth_gender = text_line.get_text().strip()
@@ -92,10 +102,11 @@ def extract_patient_infos(text_line, x0):
         if len(birth_gender_split) == 2:
             birthday = birth_gender_split[0]
             gender = birth_gender_split[1].strip() #strips the whitespace after the slash
-            output = (f"Geburtsdatum: {birthday}\nGeschlecht: {gender}\n")
+            output["Geburtsdatum"] = birthday
+            output["Geschlecht"] = gender
     elif x0 >= 464 and x0 <= 465:
         anr = text_line.get_text().strip()[10:] #slices "Ext.-Nr: " from the beginning of the string
-        output = (f"ANR: {anr}\n")
+        output["ANR"] = anr
     return output
 
 def extract_lab_results(text_line, x0, y0, text_lines):
