@@ -49,16 +49,30 @@ def main():
             # Extract patient infos and lab results
             # Initialize json_output
             lab_result = {} #json formatted output per page
+            lab_result["Parameters"] = []
             for text_line in text_lines:
                 x0, y0, _, _ = text_line.bbox  # Coordinates of the text
                 if y0 >= 514 and y0 <= 515:  # Check if the text is in the range of the patient infos
                 #    output_string.write(extract_patient_infos(text_line, x0))
                     lab_result.update(extract_patient_infos(text_line, x0))
-                    # print (f"\nTEST {lab_result}")
                 elif y0 < 461:  # Check if the text is in the range of the lab results, beneath "Untersuchung"
-                    output_string.write(extract_lab_results(text_line, x0, y0, text_lines))
+                #    output_string.write(extract_lab_results(text_line, x0, y0, text_lines))
+                    parameter = extract_lab_results(text_line, x0, y0, text_lines)
+                    if parameter: # Ensure that the parameter is not empty
+                        if "Comment" in parameter:
+                            try:
+                                if "Comment" in lab_result["Parameters"][-1]:
+                                    lab_result["Parameters"][-1]["Comment"] = lab_result["Parameters"][-1]["Comment"] + '\n' + parameter["Comment"]
+                                else:
+                                    lab_result["Parameters"][-1].update(parameter)
+                            except IndexError:
+                                lab_result["Parameters"].append(parameter)
+                        else:
+                            lab_result["Parameters"].append(parameter)
+                    # lab_result["Parameters"] = (extract_lab_results(text_line, x0, y0, text_lines))
             lab_results.append(lab_result)
-            print(json.dumps(lab_results, ensure_ascii=False, indent=4))
+            # print(page_number)
+            # print(json.dumps(lab_results, ensure_ascii=False, indent=4))
 
     # Write the extracted text to the output file
     lines = output_string.getvalue().split('\n')
@@ -74,12 +88,13 @@ def main():
         # print(f"{i}: {lines[i]}")
         i += 1
     
+    # clean up the text
+    lab_results = json.dumps(lab_results, ensure_ascii=False, indent = 4) # json formatted output
+    lab_results = lab_results.replace('(cid:13)', '')
 
     with open(output_path, 'w') as output_file:
-        # TODO: clean up the text PROPERLY
-        for line in lines:
-            line = line.replace('(cid:13)', '')
-            output_file.write(line + '\n')
+        output_file.write(lab_results)
+        
         
 
 
@@ -110,7 +125,7 @@ def extract_patient_infos(text_line, x0):
     return output
 
 def extract_lab_results(text_line, x0, y0, text_lines):
-    output = ''
+    output = {}
     if x0 >= 65 and x0 <= 66:
         # differentiate between parameter + value + unit + reference ranges and comments
         for value_unit_line in text_lines:
@@ -123,19 +138,19 @@ def extract_lab_results(text_line, x0, y0, text_lines):
 
                 # text_line is a parameter in this case
                 parameter = text_line.get_text().strip()
-                output = (f"Parameter: {parameter}\n")
+                output["Parameter"] = parameter
 
                 value_unit = value_unit_line.get_text().strip()
                 value_unit_split = value_unit.split(' ')
                 if len(value_unit_split) == 2:
                     value = value_unit_split[0]
                     unit = value_unit_split[1]
-                    output = (f"{output}Value: {value}\nUnit: {unit}\n")
                 else:
                     value = value_unit
-                    unit = "None"
-                    output = (f"{output}Value: {value}\n")
-                    output = (f"{output}Unit: {unit}\n")
+                    unit = None
+
+                output["Value"] = value
+                output["Unit"] = unit
 
                 # check for reference ranges
                 # if there is a (reference_range_)line on a similar y-coordinate and to the right of the 
@@ -145,16 +160,16 @@ def extract_lab_results(text_line, x0, y0, text_lines):
                     reference_range_x0, reference_range_y0, _, _ = reference_range_line.bbox
                     if int (reference_range_y0) in range(int (value_unit_y0 - 5), int (value_unit_y0 + 5)) and reference_range_x0 > value_unit_x0:
                         reference_range = reference_range_line.get_text().strip()
-                        output = (f"{output}Reference Range: {reference_range}\n")
+                        output["Reference_Range"] = reference_range
                         return output
-                reference_range = "None"
-                output = (f"{output}Reference Range: {reference_range}\n")
+                output["Reference_Range"] = None
+              #  output = (f"{output}Reference Range: {reference_range}\n")
                 return output
     
         # if the text is not a parameter, it is a comment
         
         comment = text_line.get_text().strip()
-        output = (f"Comment: {comment}\n")
+        output["Comment"] = comment
 
     return output
 
