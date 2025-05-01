@@ -102,7 +102,7 @@ def extract_patient_infos(text_line, x0):
             output["Vorname"] = firstname
             output["Nachname"] = surname
         else:
-            return 1
+            output["Nachname"] = name_split[0]
 
     elif x0 >= 361 and x0 <= 362:
         birth_gender = text_line.get_text().strip()
