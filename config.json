@@ -1,0 +1,34 @@
+{
+    "attributes":
+    {
+        "parameter": "name",
+        "value": "value",
+        "unit": "unit",
+        "reference_range": "reference_range",
+        "firstname": "firstname",
+        "surname": "surname",
+        "birthday": "birthday",
+        "gender": "gender"
+    },
+    "parameters":
+    {
+        "Transglutaminase-Ak (IgA) (sg)": 
+        {
+            "name": "Transglutaminase-AK (IgA)",
+            "unit": "U/ml",
+            "reference_range": null
+        },
+        "HbA1c (HPLC) (eb)":
+        {
+            "name": "HbA1c (HPLC)",
+            "unit": "%",
+            "reference_range": "< 5.7"
+        }, 
+        "HbA1c IFCC (eb)":
+        {
+            "name": "HbA1c IFCC",
+            "unit": "mmol/mol",
+            "reference_range": "< 39"
+        }
+    }
+}

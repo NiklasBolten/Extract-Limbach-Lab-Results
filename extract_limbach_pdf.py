@@ -49,7 +49,7 @@ def main():
 
             # Initialize json_output
             lab_result = {} # json formatted output per page
-            lab_result["Parameters"] = [] # Ensure "Parameters" is a list
+            lab_result["parameters"] = [] # Ensure "parameters" is a list
 
             for text_line in text_lines:
                 x0, y0, _, _ = text_line.bbox  # Coordinates of the text
@@ -68,20 +68,20 @@ def main():
                     # if parameter is not a comment, its key(s) and value(s) can be added to the previous parameter
                     # in the list of parameters
 
-                    if "Comment" not in parameter:
-                        lab_result["Parameters"].append(parameter)
+                    if "comment" not in parameter:
+                        lab_result["parameters"].append(parameter)
                         continue
 
                     try:
                         # if the previous parameter already has a comment, append the current comment to it
-                        if "Comment" in lab_result["Parameters"][-1]:
-                            lab_result["Parameters"][-1]["Comment"] = lab_result["Parameters"][-1]["Comment"] + '\n' + parameter["Comment"]
+                        if "comment" in lab_result["parameters"][-1]:
+                            lab_result["parameters"][-1]["comment"] = lab_result["parameters"][-1]["comment"] + '\n' + parameter["comment"]
                         # if the previous parameter does not have a comment, add the current comment to it
                         else:
-                            lab_result["Parameters"][-1].update(parameter)
+                            lab_result["parameters"][-1].update(parameter)
                     # for multi-page lab results, the first parameter may be a comment, which would raise an IndexError
                     except IndexError:
-                        lab_result["Parameters"].append(parameter)
+                        lab_result["parameters"].append(parameter)
                 
             lab_results.append(lab_result)
 
@@ -99,10 +99,10 @@ def extract_patient_infos(text_line, x0):
         if len(name_split) == 2:
             firstname = name_split[1].strip() # strips the whitespace after the comma
             surname = name_split[0]
-            output["Vorname"] = firstname
-            output["Nachname"] = surname
+            output["firstname"] = firstname
+            output["surname"] = surname
         else:
-            output["Nachname"] = name_split[0]
+            output["surname"] = name_split[0]
 
     elif x0 >= 361 and x0 <= 362:
         birth_gender = text_line.get_text().strip()
@@ -110,11 +110,11 @@ def extract_patient_infos(text_line, x0):
         if len(birth_gender_split) == 2:
             birthday = birth_gender_split[0].strip() #strips the whitespace before the slash
             gender = birth_gender_split[1].strip() #strips the whitespace after the slash
-            output["Geburtsdatum"] = birthday
-            output["Geschlecht"] = gender
+            output["birthday"] = birthday
+            output["gender"] = gender
     elif x0 >= 464 and x0 <= 465:
         anr = text_line.get_text().strip()[10:] #slices "Ext.-Nr: " from the beginning of the string
-        output["ANR"] = anr
+        output["anr"] = anr
     return output
 
 def extract_lab_results(text_line, x0, y0, text_lines):
@@ -131,7 +131,7 @@ def extract_lab_results(text_line, x0, y0, text_lines):
 
                 # text_line is a parameter in this case
                 parameter = text_line.get_text().strip()
-                output["Parameter"] = parameter
+                output["parameter"] = parameter
 
                 value_unit = value_unit_line.get_text().strip()
                 value_unit_split = value_unit.split(' ')
@@ -142,8 +142,8 @@ def extract_lab_results(text_line, x0, y0, text_lines):
                     value = value_unit
                     unit = None
 
-                output["Value"] = value
-                output["Unit"] = unit
+                output["value"] = value
+                output["unit"] = unit
 
                 # check for reference ranges
                 # if there is a (reference_range_)line on a similar y-coordinate and to the right of the 
@@ -153,16 +153,16 @@ def extract_lab_results(text_line, x0, y0, text_lines):
                     reference_range_x0, reference_range_y0, _, _ = reference_range_line.bbox
                     if int (reference_range_y0) in range(int (value_unit_y0 - 5), int (value_unit_y0 + 5)) and reference_range_x0 > value_unit_x0:
                         reference_range = reference_range_line.get_text().strip()
-                        output["Reference_Range"] = reference_range
+                        output["reference_range"] = reference_range
                         return output
-                output["Reference_Range"] = None
+                output["reference_range"] = None
               #  output = (f"{output}Reference Range: {reference_range}\n")
                 return output
     
         # if the text is not a parameter, it is a comment
         
         comment = text_line.get_text().strip()
-        output["Comment"] = comment
+        output["comment"] = comment
 
     return output
 
