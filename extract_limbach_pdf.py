@@ -54,6 +54,11 @@ def main():
             for text_line in text_lines:
                 x0, y0, _, _ = text_line.bbox  # Coordinates of the text
 
+                if int(x0) in range(575, 576):
+                    if text_line.get_text().strip() != "1":
+                        print("Warning: Potential Multi-Page lab result detected! Won't extract parameters.")
+                        break
+
                 if y0 >= 514 and y0 <= 516:  # Check if the text is in the range of the patient infos
                     lab_result.update(extract_patient_infos(text_line, x0))
 
