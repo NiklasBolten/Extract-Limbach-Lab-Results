@@ -61,6 +61,10 @@ def main():
             print(f"TypeError occured! -> ANR {lab_result["anr"]} not in LIS db?")
             i += 1
             continue
+        except sqlite3.OperationalError:
+            print(f"sqlite3.OperationalError occured -> no ANR found during extract_limbach_pdf.py!")
+            i += 1
+            continue
         except (AttributeError, KeyError) as e:
             print(f"{e} occured!")
             i += 1
@@ -70,11 +74,16 @@ def main():
             verify_parameters(lab_result, cu)
         except TypeError:
             print(f"TypeError occured! -> Parameter not ordered in LIS db!")
-        except (AttributeError, KeyError) as e:
-            print(f"{e} occured!")
             i += 1
             continue
-        
+        except AttributeError:
+            print(f"AttributeError occured!")
+            i += 1
+            continue
+        except KeyError:
+            print(f"KeyError occured! -> No Parameter name found during extract_limbach_pdf.py!")
+            i += 1
+            continue
         i += 1
 
     cx.close()
@@ -90,11 +99,9 @@ def verify_patient(lab_result, cu):
     patient_attributes["gender"] = cfg["attributes"]["gender"]
 
     for json_attribute, LIS_attribute in patient_attributes.items():
-        try:
-            LIS_patient_attribute = get_patient_from_db(LIS_attribute, lab_result["anr"], cu)
-        except (TypeError, AttributeError, KeyError) as e:
-            raise e
-        
+       
+        LIS_patient_attribute = get_patient_from_db(LIS_attribute, lab_result["anr"], cu)
+
         if LIS_patient_attribute == lab_result[json_attribute]:
             print(f"{json_attribute} correct!")
         else:
@@ -121,7 +128,7 @@ def verify_parameters(lab_result, cu):
 
         LIS_parameter_attributes["unit"] = cfg["parameters"][parameter["parameter"]]["unit"]
         LIS_parameter_attributes["reference_range"] = cfg["parameters"][parameter["parameter"]]["reference_range"]
-        
+
         print(f"\n{LIS_parameter_attributes["name"]}:")
         # for each attribute
         for json_attribute, LIS_attribute in parameter_attributes.items():
@@ -138,42 +145,31 @@ def verify_parameters(lab_result, cu):
     return
     
 def get_patient_from_db(column, anr, cu):
-    try:
-        res = cu.execute(f"""
-            SELECT {column} 
-            FROM patients
-            WHERE id IN(
-                SELECT patient_id
-                FROM order_number
-                WHERE id = {anr})""")
-        output = res.fetchone() #returns Tuple
-        try:
-            output = output[0] #first (and only!) Element in that Tuple
-            return output
-        except (TypeError, AttributeError) as e:
-            raise e
-    except KeyError:
-        raise KeyError
+    res = cu.execute(f"""
+        SELECT {column} 
+        FROM patients
+        WHERE id IN(
+            SELECT patient_id
+            FROM order_number
+            WHERE id = {anr})""")
+    output = res.fetchone() #returns Tuple
+    output = output[0] #first (and only!) Element in that Tuple
+    return output
+
 
 def get_parameter_from_db(column, anr, cu, parameter_name):
-    try:
-        res = cu.execute(f"""
-            SELECT {column}
-            FROM parameters
-            WHERE id IN(
-                SELECT parameter_id
-                FROM order_parameters
-                WHERE order_id = {anr})
-            AND name = "{parameter_name}"    
-                """)
-        output = res.fetchone() #returns Tuple
-        try:
-            output = output[0] #first (and only!) Element in that Tuple
-            return output
-        except (AttributeError, TypeError) as e:
-            raise e
-    except KeyError:
-        raise KeyError
+    res = cu.execute(f"""
+        SELECT {column}
+        FROM parameters
+        WHERE id IN(
+            SELECT parameter_id
+            FROM order_parameters
+            WHERE order_id = {anr})
+        AND name = "{parameter_name}"
+            """)
+    output = res.fetchone() #returns Tuple
+    output = output[0] #first (and only!) Element in that Tuple
+    return output
     
 if __name__ == '__main__':
     main()

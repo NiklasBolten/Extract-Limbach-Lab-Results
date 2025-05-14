@@ -54,7 +54,7 @@ def main():
             for text_line in text_lines:
                 x0, y0, _, _ = text_line.bbox  # Coordinates of the text
 
-                if y0 >= 514 and y0 <= 515:  # Check if the text is in the range of the patient infos
+                if y0 >= 514 and y0 <= 516:  # Check if the text is in the range of the patient infos
                     lab_result.update(extract_patient_infos(text_line, x0))
 
                 elif y0 < 461:  # Check if the text is in the range of the lab results, beneath "Untersuchung"
@@ -85,7 +85,6 @@ def main():
                 
             lab_results.append(lab_result)
 
-    # clean up the text
     lab_results = json.dumps(lab_results, ensure_ascii=False, indent = 4) # json formatted output
     lab_results = lab_results.replace('(cid:13)', '')
 
@@ -94,7 +93,9 @@ def main():
 
 def extract_patient_infos(text_line, x0):
     output = {}
-    if x0 >= 55 and x0 <= 56:
+
+    # firstname and surname
+    if x0 >= 45 and x0 <= 80:
         name_split = text_line.get_text().strip().split(',') # splits the name at the comma
         if len(name_split) == 2:
             firstname = name_split[1].strip() # strips the whitespace after the comma
@@ -102,9 +103,11 @@ def extract_patient_infos(text_line, x0):
             output["firstname"] = firstname
             output["surname"] = surname
         else:
+            output["firstname"] = None
             output["surname"] = name_split[0]
 
-    elif x0 >= 361 and x0 <= 362:
+    # birthday and gender
+    elif x0 >= 361 and x0 <= 409:
         birth_gender = text_line.get_text().strip()
         birth_gender_split = birth_gender.split('/')
         if len(birth_gender_split) == 2:
@@ -112,9 +115,17 @@ def extract_patient_infos(text_line, x0):
             gender = birth_gender_split[1].strip() #strips the whitespace after the slash
             output["birthday"] = birthday
             output["gender"] = gender
-    elif x0 >= 464 and x0 <= 465:
+        else:
+            output["birthday"] = None
+            output["gender"] = birth_gender_split[0]
+
+    # anr
+    elif x0 >= 464 and x0 <= 466:
         anr = text_line.get_text().strip()[10:] #slices "Ext.-Nr: " from the beginning of the string
+        if anr == "":
+            anr = None
         output["anr"] = anr
+    
     return output
 
 def extract_lab_results(text_line, x0, y0, text_lines):
@@ -156,7 +167,7 @@ def extract_lab_results(text_line, x0, y0, text_lines):
                         output["reference_range"] = reference_range
                         return output
                 output["reference_range"] = None
-              #  output = (f"{output}Reference Range: {reference_range}\n")
+
                 return output
     
         # if the text is not a parameter, it is a comment
