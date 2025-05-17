@@ -4,7 +4,8 @@ import sqlite3
 
 # TODO: output matching Lab Results, so they can be parsed to the LIS
 # TODO: output mismatched Lab Results to a separate log file
-# TODO: multi-page handling???
+# TODO: handle comments
+# TODO: multi-page handling??? -> extract_limbach_pdf.py wont read multi-page results for now
 
 try: 
     config = open("config.json", "r")
@@ -91,7 +92,7 @@ def main():
     config.close()
 
 def verify_patient(lab_result, cu):
-    # load correct attribute names
+    # load relevant attributes from config
     patient_attributes = {}
     patient_attributes["firstname"] = cfg["attributes"]["firstname"]
     patient_attributes["surname"] = cfg["attributes"]["surname"]
@@ -110,7 +111,7 @@ def verify_patient(lab_result, cu):
     return True
 
 def verify_parameters(lab_result, cu):
-    # load correct attribute names
+    # load relevant attributes from config
     parameter_attributes = {}
     parameter_attributes["parameter"] = cfg["attributes"]["parameter"]
     parameter_attributes["unit"] = cfg["attributes"]["unit"]
@@ -118,7 +119,7 @@ def verify_parameters(lab_result, cu):
 
     # for each parameter
     for parameter in lab_result["parameters"]:
-        # load correct parameter attribute values from config
+        # load relevant parameter specific attributes from config (except valid_comments; those are handled seperately)
         LIS_parameter_attributes = {}
         try:
             LIS_parameter_attributes["name"] = cfg["parameters"][parameter["parameter"]]["name"]
@@ -130,7 +131,8 @@ def verify_parameters(lab_result, cu):
         LIS_parameter_attributes["reference_range"] = cfg["parameters"][parameter["parameter"]]["reference_range"]
 
         print(f"\n{LIS_parameter_attributes["name"]}:")
-        # for each attribute
+
+        # for each attribute (not LIS_prameter_attributes; valid_comments are handled seperately!)
         for json_attribute, LIS_attribute in parameter_attributes.items():
             try:
                 LIS_parameter_attribute = get_parameter_from_db(LIS_attribute, lab_result["anr"], cu, LIS_parameter_attributes["name"])
@@ -142,8 +144,28 @@ def verify_parameters(lab_result, cu):
                 print(f"{json_attribute} correct!")
             else:
                 print(f"{LIS_parameter_attributes["name"]}: {json_attribute} mismatch: {LIS_parameter_attribute} | {LIS_parameter_attributes[LIS_attribute]}")
+        
+        if "comment" in parameter:
+            comment_name = verify_comment(parameter)
+            if comment_name:
+                print(f"comment correct -> {comment_name}")
+            else:
+                print("comment not found!")
+
     return
     
+def verify_comment(parameter):
+        valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
+        if not valid_comments: # No valid comments in config.json
+            return False
+        try:
+            for instance in range(len(valid_comments)):
+                if parameter["comment"] == valid_comments[instance]["text"]:
+                    return valid_comments[instance]["name"]
+        except KeyError:
+            print(f"KeyError: {valid_comments[instance]} is missing name or text key in config.json")
+        return False
+
 def get_patient_from_db(column, anr, cu):
     res = cu.execute(f"""
         SELECT {column} 
@@ -152,8 +174,8 @@ def get_patient_from_db(column, anr, cu):
             SELECT patient_id
             FROM order_number
             WHERE id = {anr})""")
-    output = res.fetchone() #returns Tuple
-    output = output[0] #first (and only!) Element in that Tuple
+    output = res.fetchone() # returns Tuple
+    output = output[0] # first (and only!) Element in that Tuple
     return output
 
 
@@ -167,8 +189,8 @@ def get_parameter_from_db(column, anr, cu, parameter_name):
             WHERE order_id = {anr})
         AND name = "{parameter_name}"
             """)
-    output = res.fetchone() #returns Tuple
-    output = output[0] #first (and only!) Element in that Tuple
+    output = res.fetchone() # returns Tuple
+    output = output[0] # first (and only!) Element in that Tuple
     return output
     
 if __name__ == '__main__':
