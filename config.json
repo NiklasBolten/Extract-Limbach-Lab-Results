@@ -12,23 +12,53 @@
     },
     "parameters":
     {
-        "Transglutaminase-Ak (IgA) (sg)": 
+        "Transglutaminase-Ak (IgA) (sg)":
         {
             "name": "Transglutaminase-AK (IgA)",
             "unit": "U/ml",
-            "reference_range": null
+            "reference_range": null,
+            "comments":
+            [
+                {
+                    "name": "test",
+                    "text": "test"
+                },
+                {
+                    "name": "tgakiga",
+                    "text": "< 7\ngrenzwertig : 7 - 10\npositiv : > 10\nELISA"
+                },
+                {
+                    "name": "tgakiga2",
+                    "text": "< 7\ngenzwertig : 7 - 10\npositiv : > 10\nELISA"
+                }
+            ]
         },
         "HbA1c (HPLC) (eb)":
         {
             "name": "HbA1c (HPLC)",
             "unit": "%",
-            "reference_range": "< 5.7"
-        }, 
+            "reference_range": "< 5.7",
+            "comments":
+            [
+
+            ]
+        },
         "HbA1c IFCC (eb)":
         {
             "name": "HbA1c IFCC",
             "unit": "mmol/mol",
-            "reference_range": "< 39"
+            "reference_range": "< 39",
+            "comments":
+            [
+                {
+                    "name": "hba1cifcc",
+                    "text": "Kontrolle der Nüchternplasmaglucose und / oder 2h oGTT\ndurchführen"
+                },
+                {
+                    "name": "hba1cfcc",
+                    "text": "Kontrolle der Nüchternplasmaglucose und / oder 2h oGTT\ndurchführen"
+                }
+            ]
         }
     }
 }
