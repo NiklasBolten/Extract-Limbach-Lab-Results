@@ -108,42 +108,41 @@ def verify_patient(lab_result, cu):
         else:
             print(f"{json_attribute} mismatch: {LIS_patient_attribute} | {lab_result[json_attribute]}")
             return False
+    print("\n")
     return True
 
 def verify_parameters(lab_result, cu):
-    # load relevant attributes from config
-    parameter_attributes = {}
-    parameter_attributes["parameter"] = cfg["attributes"]["parameter"]
-    parameter_attributes["unit"] = cfg["attributes"]["unit"]
-    parameter_attributes["reference_range"] = cfg["attributes"]["reference_range"]
+    # load relevant attribute names (not parameter specific!) from config
+    attribute_names = {}
+    attribute_names["unit"] = cfg["attributes"]["unit"]
+    attribute_names["reference_range"] = cfg["attributes"]["reference_range"]
 
     # for each parameter
     for parameter in lab_result["parameters"]:
-        # load relevant parameter specific attributes from config (except valid_comments; those are handled seperately)
-        LIS_parameter_attributes = {}
+        # check if parameter is ordered in LIS; this also verifies the parameter's name
         try:
-            LIS_parameter_attributes["name"] = cfg["parameters"][parameter["parameter"]]["name"]
+            get_parameter_from_db(cfg["attributes"]["parameter"], lab_result["anr"], cu, cfg["parameters"][parameter["parameter"]]["name"])
+        except TypeError:
+            print(f"TypeError: {parameter["parameter"]} exists in config.json, but is not ordered in LIS!")
+            break
         except KeyError:
             print(f"KeyError: {parameter["parameter"]} not in config.json")
-            continue
+            break
+        
+        print(f"{cfg["parameters"][parameter["parameter"]]["name"]}:")
 
-        LIS_parameter_attributes["unit"] = cfg["parameters"][parameter["parameter"]]["unit"]
-        LIS_parameter_attributes["reference_range"] = cfg["parameters"][parameter["parameter"]]["reference_range"]
+        # load relevant parameter specific attributes from config (except valid_comments; those are handled seperately)
+        parameter_attributes = {}
+        parameter_attributes["unit"] = cfg["parameters"][parameter["parameter"]]["unit"]
+        parameter_attributes["reference_range"] = cfg["parameters"][parameter["parameter"]]["reference_range"]
 
-        print(f"\n{LIS_parameter_attributes["name"]}:")
+        # for each attribute (not parameter_attributes; valid_comments are handled seperately!)
+        for json_attribute, LIS_attribute in attribute_names.items():
 
-        # for each attribute (not LIS_prameter_attributes; valid_comments are handled seperately!)
-        for json_attribute, LIS_attribute in parameter_attributes.items():
-            try:
-                LIS_parameter_attribute = get_parameter_from_db(LIS_attribute, lab_result["anr"], cu, LIS_parameter_attributes["name"])
-            except TypeError:
-                print(f"TypeError: {parameter["parameter"]} exists in config.json, but is not ordered in LIS!")
-                break
-
-            if LIS_parameter_attribute == LIS_parameter_attributes[LIS_attribute]:
+            if parameter[json_attribute] == parameter_attributes[LIS_attribute]:
                 print(f"{json_attribute} correct!")
             else:
-                print(f"{LIS_parameter_attributes["name"]}: {json_attribute} mismatch: {LIS_parameter_attribute} | {LIS_parameter_attributes[LIS_attribute]}")
+                print(f"{json_attribute} mismatch: {parameter[json_attribute]} | {parameter_attributes[LIS_attribute]}")
         
         if "comment" in parameter:
             comment_name = verify_comment(parameter)
@@ -151,7 +150,7 @@ def verify_parameters(lab_result, cu):
                 print(f"comment correct -> {comment_name}")
             else:
                 print("comment not found!")
-
+        print("\n")
     return
     
 def verify_comment(parameter):
