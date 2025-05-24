@@ -2,9 +2,10 @@ import json
 import sys
 import sqlite3
 
-# TODO: output matching Lab Results, so they can be parsed to the LIS
-# TODO: output mismatched Lab Results to a separate log file
-# TODO: handle comments
+# TODO: modify mismatched_lab_results to include reason for mismatch, aswell as the full lab result
+# as a file, that can be displayed as an excel sheet (probably as csv file)
+# TODO: modify matched_lab_results to only include relevant attributes? -> Depends on how the results
+# are parsed to the real LIS db, so for now, all attributes are included
 # TODO: multi-page handling??? -> extract_limbach_pdf.py wont read multi-page results for now
 
 try: 
@@ -51,48 +52,57 @@ def main():
         config.close()
         sys.exit(1)
 
+    matched_lab_results = []
+    mismatched_lab_results = []
+
     for lab_result in f:
         print(f"\nlab result {i}: ANR: {lab_result["anr"]}\n")
+        is_matched = True
         try:
             if not verify_patient(lab_result, cu):
-                print("Patient verification Failed!")
-                i += 1
-                continue
+                is_matched = False
         except TypeError:
             print(f"TypeError occured! -> ANR {lab_result["anr"]} not in LIS db?")
-            i += 1
-            continue
+            is_matched = False
         except sqlite3.OperationalError:
             print(f"sqlite3.OperationalError occured -> no ANR found during extract_limbach_pdf.py!")
-            i += 1
-            continue
+            is_matched = False
         except (AttributeError, KeyError) as e:
             print(f"{e} occured!")
-            i += 1
-            continue
+            is_matched = False
         
         try:
-            verify_parameters(lab_result, cu)
+            if not verify_parameters(lab_result, cu):
+                is_matched = False
         except TypeError:
             print(f"TypeError occured! -> Parameter not ordered in LIS db!")
-            i += 1
-            continue
+            is_matched = False
         except AttributeError:
             print(f"AttributeError occured!")
-            i += 1
-            continue
+            is_matched = False
         except KeyError:
             print(f"KeyError occured! -> No Parameter name found during extract_limbach_pdf.py!")
-            i += 1
-            continue
+            is_matched = False
+        
+        if is_matched:
+            matched_lab_results.append(lab_result)
+        else:
+            mismatched_lab_results.append(lab_result)            
         i += 1
+
+    with open("matched_lab_results.json", 'w') as outfile:
+        outfile.write(json.dumps(matched_lab_results, indent=4, ensure_ascii=False))
+
+    with open("mismatched_lab_results.json", 'w') as outfile:
+        outfile.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
+    
 
     cx.close()
     infile.close()
     config.close()
 
 def verify_patient(lab_result, cu):
-    # load relevant attributes from config
+    # load relevant attribute names from config
     patient_attributes = {}
     patient_attributes["firstname"] = cfg["attributes"]["firstname"]
     patient_attributes["surname"] = cfg["attributes"]["surname"]
@@ -113,24 +123,27 @@ def verify_patient(lab_result, cu):
 
 def verify_parameters(lab_result, cu):
     # load relevant attribute names (not parameter specific!) from config
+    # provides correct keys for unit and reference range verification
     attribute_names = {}
     attribute_names["unit"] = cfg["attributes"]["unit"]
     attribute_names["reference_range"] = cfg["attributes"]["reference_range"]
 
     # for each parameter
     for parameter in lab_result["parameters"]:
+
         # check if parameter is ordered in LIS; this also verifies the parameter's name
         try:
             get_parameter_from_db(cfg["attributes"]["parameter"], lab_result["anr"], cu, cfg["parameters"][parameter["parameter"]]["name"])
         except TypeError:
             print(f"TypeError: {parameter["parameter"]} exists in config.json, but is not ordered in LIS!")
-            break
+            return False
         except KeyError:
             print(f"KeyError: {parameter["parameter"]} not in config.json")
-            break
+            return False
         
         print(f"{cfg["parameters"][parameter["parameter"]]["name"]}:")
 
+        # verify unit and reference range:
         # load relevant parameter specific attributes from config (except valid_comments; those are handled seperately)
         parameter_attributes = {}
         parameter_attributes["unit"] = cfg["parameters"][parameter["parameter"]]["unit"]
@@ -143,15 +156,18 @@ def verify_parameters(lab_result, cu):
                 print(f"{json_attribute} correct!")
             else:
                 print(f"{json_attribute} mismatch: {parameter[json_attribute]} | {parameter_attributes[LIS_attribute]}")
+                return False
         
+        # verify comment: 
         if "comment" in parameter:
             comment_name = verify_comment(parameter)
             if comment_name:
                 print(f"comment correct -> {comment_name}")
             else:
                 print("comment not found!")
+                return False
         print("\n")
-    return
+    return True
     
 def verify_comment(parameter):
         valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
