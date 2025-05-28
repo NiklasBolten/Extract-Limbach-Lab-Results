@@ -56,45 +56,40 @@ def main():
     mismatched_lab_results = []
 
     for lab_result in f:
-        print(f"\nlab result {i}: ANR: {lab_result["anr"]}\n")
-        is_matched = True
+        patient_mismatch_reason = None
+        parameter_mismatch_reason = None
         try:
-            if not verify_patient(lab_result, cu):
-                is_matched = False
+            patient_mismatch_reason = verify_patient(lab_result, cu)
         except TypeError:
-            print(f"TypeError occured! -> ANR {lab_result["anr"]} not in LIS db?")
-            is_matched = False
+            patient_mismatch_reason = f"TypeError occured! -> ANR {lab_result["anr"]} not in LIS db?"
         except sqlite3.OperationalError:
-            print(f"sqlite3.OperationalError occured -> no ANR found during extract_limbach_pdf.py!")
-            is_matched = False
+            patient_mismatch_reason = "sqlite3.OperationalError occured -> no ANR found during extract_limbach_pdf.py!"
         except (AttributeError, KeyError) as e:
-            print(f"{e} occured!")
-            is_matched = False
+            patient_mismatch_reason = f"{e} occured!"
         
         try:
-            if not verify_parameters(lab_result, cu):
-                is_matched = False
+            parameter_mismatch_reason = verify_parameters(lab_result, cu)
         except TypeError:
-            print(f"TypeError occured! -> Parameter not ordered in LIS db!")
-            is_matched = False
+            parameter_mismatch_reason = "TypeError occured! -> Parameter not ordered in LIS db!"
         except AttributeError:
-            print(f"AttributeError occured!")
-            is_matched = False
+            parameter_mismatch_reason = "AttributeError occured!"
         except KeyError:
-            print(f"KeyError occured! -> No Parameter name found during extract_limbach_pdf.py!")
-            is_matched = False
+            parameter_mismatch_reason = "KeyError occured! -> No Parameter name found during extract_limbach_pdf.py!"
         
-        if is_matched:
+        if patient_mismatch_reason == None and parameter_mismatch_reason == None:
             matched_lab_results.append(lab_result)
         else:
-            mismatched_lab_results.append(lab_result)            
+            mismatched_lab_results.append(lab_result)
+            mismatched_lab_results[len(mismatched_lab_results) - 1]["patient_mismatch_reason"] = patient_mismatch_reason
+            mismatched_lab_results[len(mismatched_lab_results) - 1]["parameter_mismatch_reason"] = parameter_mismatch_reason
         i += 1
 
     with open("matched_lab_results.json", 'w') as outfile:
         outfile.write(json.dumps(matched_lab_results, indent=4, ensure_ascii=False))
 
-    with open("mismatched_lab_results.json", 'w') as outfile:
-        outfile.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
+    with open("mismatched_lab_results.json", 'w') as outfile2:
+        print(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
+        outfile2.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
     
 
     cx.close()
@@ -113,13 +108,10 @@ def verify_patient(lab_result, cu):
        
         LIS_patient_attribute = get_patient_from_db(LIS_attribute, lab_result["anr"], cu)
 
-        if LIS_patient_attribute == lab_result[json_attribute]:
-            print(f"{json_attribute} correct!")
-        else:
-            print(f"{json_attribute} mismatch: {LIS_patient_attribute} | {lab_result[json_attribute]}")
-            return False
-    print("\n")
-    return True
+        if LIS_patient_attribute != lab_result[json_attribute]:
+            reason = f"{json_attribute} mismatch: {LIS_patient_attribute} | {lab_result[json_attribute]}"
+            return reason
+    return None
 
 def verify_parameters(lab_result, cu):
     # load relevant attribute names (not parameter specific!) from config
@@ -135,14 +127,12 @@ def verify_parameters(lab_result, cu):
         try:
             get_parameter_from_db(cfg["attributes"]["parameter"], lab_result["anr"], cu, cfg["parameters"][parameter["parameter"]]["name"])
         except TypeError:
-            print(f"TypeError: {parameter["parameter"]} exists in config.json, but is not ordered in LIS!")
-            return False
+            reason = f"TypeError: {parameter["parameter"]} exists in config.json, but is not ordered in LIS!"
+            return reason
         except KeyError:
-            print(f"KeyError: {parameter["parameter"]} not in config.json")
-            return False
+            reason = f"KeyError: {parameter["parameter"]} not in config.json"
+            return reason
         
-        print(f"{cfg["parameters"][parameter["parameter"]]["name"]}:")
-
         # verify unit and reference range:
         # load relevant parameter specific attributes from config (except valid_comments; those are handled seperately)
         parameter_attributes = {}
@@ -152,34 +142,33 @@ def verify_parameters(lab_result, cu):
         # for each attribute (not parameter_attributes; valid_comments are handled seperately!)
         for json_attribute, LIS_attribute in attribute_names.items():
 
-            if parameter[json_attribute] == parameter_attributes[LIS_attribute]:
-                print(f"{json_attribute} correct!")
-            else:
-                print(f"{json_attribute} mismatch: {parameter[json_attribute]} | {parameter_attributes[LIS_attribute]}")
-                return False
+            if parameter[json_attribute] != parameter_attributes[LIS_attribute]:
+                reason = f"{json_attribute} mismatch: {parameter[json_attribute]} | {parameter_attributes[LIS_attribute]}"
+                return reason
         
         # verify comment: 
         if "comment" in parameter:
-            comment_name = verify_comment(parameter)
-            if comment_name:
-                print(f"comment correct -> {comment_name}")
+            result = verify_comment(parameter)
+            if result['success'] == True:
+                parameter["comment"] = result['name'] # variable represents a comment name
             else:
-                print("comment not found!")
-                return False
-        print("\n")
-    return True
+                return result['reason'] # variable represents a reason for mismatch
+    return None
     
 def verify_comment(parameter):
         valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
-        if not valid_comments: # No valid comments in config.json
-            return False
+        if not valid_comments:
+            return {'success': False, 'reason': "No valid comments in config.json"}
+        #print(valid_comments)
         try:
             for instance in range(len(valid_comments)):
                 if parameter["comment"] == valid_comments[instance]["text"]:
-                    return valid_comments[instance]["name"]
+                    print(valid_comments[instance])
+                    return {'success': True, 'name': valid_comments[instance]["name"]}
         except KeyError:
-            print(f"KeyError: {valid_comments[instance]} is missing name or text key in config.json")
-        return False
+            return {'success': False, 'reason': f"KeyError: {valid_comments[instance]} is missing name or text key in config.json"}
+        
+        return {'success': False, 'reason': f"Comment for {parameter["parameter"]} not found in config.json"}
 
 def get_patient_from_db(column, anr, cu):
     res = cu.execute(f"""
