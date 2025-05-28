@@ -87,9 +87,8 @@ def main():
     with open("matched_lab_results.json", 'w') as outfile:
         outfile.write(json.dumps(matched_lab_results, indent=4, ensure_ascii=False))
 
-    with open("mismatched_lab_results.json", 'w') as outfile2:
-        print(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
-        outfile2.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
+    with open("mismatched_lab_results.json", 'w') as outfile:
+        outfile.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
     
 
     cx.close()
@@ -150,20 +149,18 @@ def verify_parameters(lab_result, cu):
         if "comment" in parameter:
             result = verify_comment(parameter)
             if result['success'] == True:
-                parameter["comment"] = result['name'] # variable represents a comment name
+                parameter["comment"] = result['name']
             else:
-                return result['reason'] # variable represents a reason for mismatch
+                return result['reason']
     return None
     
 def verify_comment(parameter):
         valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
         if not valid_comments:
             return {'success': False, 'reason': "No valid comments in config.json"}
-        #print(valid_comments)
         try:
             for instance in range(len(valid_comments)):
                 if parameter["comment"] == valid_comments[instance]["text"]:
-                    print(valid_comments[instance])
                     return {'success': True, 'name': valid_comments[instance]["name"]}
         except KeyError:
             return {'success': False, 'reason': f"KeyError: {valid_comments[instance]} is missing name or text key in config.json"}
