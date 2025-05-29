@@ -1,4 +1,5 @@
 import json
+import csv
 import sys
 import sqlite3
 
@@ -80,6 +81,7 @@ def main():
             matched_lab_results.append(lab_result)
         else:
             mismatched_lab_results.append(lab_result)
+            mismatched_lab_results[len(mismatched_lab_results) - 1]["page"] = i
             mismatched_lab_results[len(mismatched_lab_results) - 1]["patient_mismatch_reason"] = patient_mismatch_reason
             mismatched_lab_results[len(mismatched_lab_results) - 1]["parameter_mismatch_reason"] = parameter_mismatch_reason
         i += 1
@@ -89,6 +91,19 @@ def main():
 
     with open("mismatched_lab_results.json", 'w') as outfile:
         outfile.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
+    
+    with open("mismatched_lab_results.csv", 'w', newline='') as outfile:
+        fieldnames = ['page', 'anr', 'firstname', 'surname', 'birthday', 'parameter_mismatch_reason', 'patient_mismatch_reason']
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames, dialect='excel', delimiter='\t')
+        writer.writeheader()
+        for lab_result in mismatched_lab_results:
+            writer.writerow({'page': lab_result['page'],
+                            'anr': lab_result['anr'],
+                            'firstname': lab_result['firstname'],
+                            'surname': lab_result['surname'],
+                            'birthday': lab_result['birthday'],
+                            'parameter_mismatch_reason': lab_result['parameter_mismatch_reason'],
+                            'patient_mismatch_reason': lab_result['patient_mismatch_reason']})
     
 
     cx.close()

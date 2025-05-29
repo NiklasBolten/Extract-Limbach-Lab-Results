@@ -91,7 +91,7 @@ def main():
             lab_results.append(lab_result)
 
     lab_results = json.dumps(lab_results, ensure_ascii=False, indent = 4) # json formatted output
-    lab_results = lab_results.replace('(cid:13)', '')
+    lab_results = lab_results.replace('\t', '    ') # tabs are used as delimiters for the the mismatched lab results csv file
 
     with open(output_path, 'w') as output_file:
         output_file.write(lab_results)

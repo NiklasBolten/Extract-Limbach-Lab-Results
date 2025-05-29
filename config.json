@@ -24,12 +24,8 @@
                     "text": "test"
                 },
                 {
-                    "name": "tgakiga",
-                    "text": "< 7\ngrenzwertig : 7 - 10\npositiv : > 10\nELISA"
-                },
-                {
-                    "name": "tgakiga2",
-                    "text": "< 7\ngenzwertig : 7 - 10\npositiv : > 10\nELISA"
+                    "name": "ttagiga",
+                    "text": "< 7(cid:13)\ngrenzwertig : 7 - 10(cid:13)\npositiv : > 10\nELISA"
                 }
             ]
         },
@@ -55,8 +51,8 @@
                     "text": "Kontrolle der Nüchternplasmaglucose und / oder 2h oGTT\ndurchführen"
                 },
                 {
-                    "name": "hba1cfcc",
-                    "text": "Kontrolle der Nüchternplasmaglucose und / oder 2h oGTT\ndurchführen"
+                    "name": "hba1ciffcgesund",
+                    "text": "Kein Diabetes mellitus"
                 }
             ]
         }
