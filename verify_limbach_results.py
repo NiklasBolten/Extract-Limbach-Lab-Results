@@ -1,66 +1,24 @@
 import json
 import csv
-import sys
 import sqlite3
 
-# TODO: modify mismatched_lab_results to include reason for mismatch, aswell as the full lab result
-# as a file, that can be displayed as an excel sheet (probably as csv file)
-# TODO: modify matched_lab_results to only include relevant attributes? -> Depends on how the results
-# are parsed to the real LIS db, so for now, all attributes are included
-# TODO: multi-page handling??? -> extract_limbach_pdf.py wont read multi-page results for now
-
-try: 
-    config = open("config.json", "r")
-except FileNotFoundError:
-    print("Error: config.json not found")
-    sys.exit(1)
-except PermissionError:
-    print("Error: No permission to open config.json.")
-    sys.exit(1)
-except OSError as e:
-    print(f"Other OS error: {e}")
-    sys.exit(1)
-
-try:
-    cfg = json.loads(config.read())
-except json.JSONDecodeError:
-        print("Error: The config file is not a valid JSON file.")
-        config.close()
-        sys.exit(1)
-
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: verify_limbach_results.py [input.json]")
-        sys.exit(1)
-
-    if sys.argv[1][-5:] != '.json':
-        print("Error: The input file must be a JSON file.")
-        sys.exit(1)
+def main(lab_results, cfg):
 
     # open model LIS db
     cx = sqlite3.connect("LIS.db")
     cu = cx.cursor()
     i = 1 # counts lab results
 
-    # open and read inputted json file
-    infile = open(sys.argv[1], "r")
-    try:
-        f = json.loads(infile.read())
-    except json.JSONDecodeError:
-        print("Error: The input file is not a valid JSON file.")
-        infile.close()
-        cx.close()
-        config.close()
-        sys.exit(1)
+    lab_results = json.loads(lab_results)
 
     matched_lab_results = []
     mismatched_lab_results = []
 
-    for lab_result in f:
+    for lab_result in lab_results:
         patient_mismatch_reason = None
         parameter_mismatch_reason = None
         try:
-            patient_mismatch_reason = verify_patient(lab_result, cu)
+            patient_mismatch_reason = verify_patient(lab_result, cu, cfg)
         except TypeError:
             patient_mismatch_reason = f"TypeError occured! -> ANR {lab_result["anr"]} not in LIS db?"
         except sqlite3.OperationalError:
@@ -69,7 +27,7 @@ def main():
             patient_mismatch_reason = f"{e} occured!"
         
         try:
-            parameter_mismatch_reason = verify_parameters(lab_result, cu)
+            parameter_mismatch_reason = verify_parameters(lab_result, cu, cfg)
         except TypeError:
             parameter_mismatch_reason = "TypeError occured! -> Parameter not ordered in LIS db!"
         except AttributeError:
@@ -89,9 +47,6 @@ def main():
     with open("matched_lab_results.json", 'w') as outfile:
         outfile.write(json.dumps(matched_lab_results, indent=4, ensure_ascii=False))
 
-    with open("mismatched_lab_results.json", 'w') as outfile:
-        outfile.write(json.dumps(mismatched_lab_results, indent=4, ensure_ascii=False))
-    
     with open("mismatched_lab_results.csv", 'w', newline='') as outfile:
         fieldnames = ['page', 'anr', 'firstname', 'surname', 'birthday', 'parameter_mismatch_reason', 'patient_mismatch_reason']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames, dialect='excel', delimiter='\t')
@@ -107,10 +62,8 @@ def main():
     
 
     cx.close()
-    infile.close()
-    config.close()
 
-def verify_patient(lab_result, cu):
+def verify_patient(lab_result, cu, cfg):
     # load relevant attribute names from config
     patient_attributes = {}
     patient_attributes["firstname"] = cfg["attributes"]["firstname"]
@@ -127,7 +80,7 @@ def verify_patient(lab_result, cu):
             return reason
     return None
 
-def verify_parameters(lab_result, cu):
+def verify_parameters(lab_result, cu, cfg):
     # load relevant attribute names (not parameter specific!) from config
     # provides correct keys for unit and reference range verification
     attribute_names = {}
@@ -162,14 +115,14 @@ def verify_parameters(lab_result, cu):
         
         # verify comment: 
         if "comment" in parameter:
-            result = verify_comment(parameter)
+            result = verify_comment(parameter, cfg)
             if result['success'] == True:
-                parameter["comment"] = result['name']
+                parameter["comment"] = result['name'] # this ends up in the matched_lab_results.json file!
             else:
                 return result['reason']
     return None
     
-def verify_comment(parameter):
+def verify_comment(parameter, cfg):
         valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
         if not valid_comments:
             return {'success': False, 'reason': "No valid comments in config.json"}
@@ -208,6 +161,3 @@ def get_parameter_from_db(column, anr, cu, parameter_name):
     output = res.fetchone() # returns Tuple
     output = output[0] # first (and only!) Element in that Tuple
     return output
-    
-if __name__ == '__main__':
-    main()

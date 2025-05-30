@@ -1,4 +1,3 @@
-import sys
 import json
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LAParams, LTTextBoxHorizontal
@@ -7,22 +6,7 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument
 
-def main():
-    
-    # Validate the pdf_path and output_path
-    if len(sys.argv) != 3:
-        print("Usage: extract_limbach_pdf.py [input.pdf] [output.txt]")
-        sys.exit(1)
-
-    input_path = sys.argv[1]
-    if input_path[-4:] != '.pdf':
-        print("Error: The input file must be a PDF file.")
-        sys.exit(1)
-
-    output_path = sys.argv[2]
-    if output_path[-5:] != '.json':
-        print("Error: The output file must be a JSON file.")
-        sys.exit(1)
+def main(input_path):
 
     lab_results = [] # list of json formatted outputs per page
 
@@ -93,8 +77,10 @@ def main():
     lab_results = json.dumps(lab_results, ensure_ascii=False, indent = 4) # json formatted output
     lab_results = lab_results.replace('\t', '    ') # tabs are used as delimiters for the the mismatched lab results csv file
 
-    with open(output_path, 'w') as output_file:
+    with open("extracted_lab_results.json", 'w') as output_file:
         output_file.write(lab_results)
+
+    return lab_results
 
 def extract_patient_infos(text_line, x0):
     output = {}
@@ -181,5 +167,3 @@ def extract_lab_results(text_line, x0, y0, text_lines):
         output["comment"] = comment
 
     return output
-
-main()
