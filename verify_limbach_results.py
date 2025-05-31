@@ -35,7 +35,7 @@ def main(lab_results, cfg):
         except KeyError:
             parameter_mismatch_reason = "KeyError occured! -> No Parameter name found during extract_limbach_pdf.py!"
         
-        if patient_mismatch_reason == None and parameter_mismatch_reason == None:
+        if patient_mismatch_reason == None and parameter_mismatch_reason == None and lab_result["number_of_pages"] == "1":
             matched_lab_results.append(lab_result)
         else:
             mismatched_lab_results.append(lab_result)
@@ -48,7 +48,7 @@ def main(lab_results, cfg):
         outfile.write(json.dumps(matched_lab_results, indent=4, ensure_ascii=False))
 
     with open("mismatched_lab_results.csv", 'w', newline='') as outfile:
-        fieldnames = ['page', 'anr', 'firstname', 'surname', 'birthday', 'parameter_mismatch_reason', 'patient_mismatch_reason']
+        fieldnames = ['page', 'anr', 'firstname', 'surname', 'birthday', 'parameter_mismatch_reason', 'patient_mismatch_reason', 'number_of_pages']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames, dialect='excel', delimiter='\t')
         writer.writeheader()
         for lab_result in mismatched_lab_results:
@@ -58,7 +58,8 @@ def main(lab_results, cfg):
                             'surname': lab_result['surname'],
                             'birthday': lab_result['birthday'],
                             'parameter_mismatch_reason': lab_result['parameter_mismatch_reason'],
-                            'patient_mismatch_reason': lab_result['patient_mismatch_reason']})
+                            'patient_mismatch_reason': lab_result['patient_mismatch_reason'],
+                            'number_of_pages': lab_result['number_of_pages']})
     
 
     cx.close()
@@ -125,13 +126,13 @@ def verify_parameters(lab_result, cu, cfg):
 def verify_comment(parameter, cfg):
         valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
         if not valid_comments:
-            return {'success': False, 'reason': "No valid comments in config.json"}
+            return {'success': False, 'reason': f"No valid comments for {parameter["parameter"]} in config.json"}
         try:
             for instance in range(len(valid_comments)):
                 if parameter["comment"] == valid_comments[instance]["text"]:
                     return {'success': True, 'name': valid_comments[instance]["name"]}
         except KeyError:
-            return {'success': False, 'reason': f"KeyError: {valid_comments[instance]} is missing name or text key in config.json"}
+            return {'success': False, 'reason': f"KeyError: {valid_comments[instance]} is missing name or text key for {parameter["parameter"]} in config.json"}
         
         return {'success': False, 'reason': f"Comment for {parameter["parameter"]} not found in config.json"}
 
