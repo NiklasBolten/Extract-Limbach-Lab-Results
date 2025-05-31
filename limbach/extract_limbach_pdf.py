@@ -6,7 +6,7 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument
 
-def main(input_path):
+def extract_limbach_pdf(input_path):
 
     lab_results = [] # list of json formatted outputs per page
 

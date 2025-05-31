@@ -2,7 +2,7 @@ import json
 import csv
 import sqlite3
 
-def main(lab_results, cfg):
+def verify_limbach_results(lab_results, cfg):
 
     # open model LIS db
     cx = sqlite3.connect("LIS.db")

@@ -1,11 +1,12 @@
 import sys
 import json
-import extract_limbach_pdf
-import verify_limbach_results
+from limbach.extract_limbach_pdf import extract_limbach_pdf
+from limbach.verify_limbach_results import verify_limbach_results
 
 # TODO: modify matched_lab_results to only include relevant attributes? -> Depends on how the results
 # are parsed to the real LIS db, so for now, all attributes are included
-# TODO: multi-page handling??? -> extract_limbach_pdf.py wont read multi-page results for now
+# TODO: multi-page handling??? -> extract_limbach_pdf.py returns reported number of pages, verify_limbach_results.py
+# appends lab_result to mismatched_lab_results if number_of pages is not 1
 
 def main():
 
@@ -38,8 +39,8 @@ def main():
         print("Error: The input file must be a PDF file.")
         sys.exit(1)
 
-    lab_results = extract_limbach_pdf.main(input_path)
-    verify_limbach_results.main(lab_results, cfg)
+    lab_results = extract_limbach_pdf(input_path)
+    verify_limbach_results(lab_results, cfg)
 
 if __name__ == "__main__":
     main()
