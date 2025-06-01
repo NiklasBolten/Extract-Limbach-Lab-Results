@@ -8,6 +8,7 @@ from limbach.verify_limbach_results import verify_limbach_results
 # TODO: multi-page handling??? -> extract_limbach_pdf.py returns reported number of pages, verify_limbach_results.py
 # appends lab_result to mismatched_lab_results if number_of pages is not 1
 
+
 def main():
 
     try: 
@@ -25,9 +26,9 @@ def main():
     try:
         cfg = json.loads(config.read())
     except json.JSONDecodeError:
-            print("Error: The config file is not a valid JSON file.")
-            config.close()
-            sys.exit(1)
+        print("Error: The config file is not a valid JSON file.")
+        config.close()
+        sys.exit(1)
 
     # Validate the pdf_path and output_path
     if len(sys.argv) != 2:
@@ -41,6 +42,7 @@ def main():
 
     lab_results = extract_limbach_pdf(input_path)
     verify_limbach_results(lab_results, cfg)
+
 
 if __name__ == "__main__":
     main()
