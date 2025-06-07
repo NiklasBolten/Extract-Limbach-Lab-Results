@@ -78,7 +78,7 @@ def extract_limbach_pdf(input_path):
     # tabs are used as delimiters for the the mismatched lab results csv file
     lab_results = lab_results.replace('\t', '    ')
 
-    with open("debug/extracted_lab_results.json", 'w') as output_file:
+    with open("debug/extracted_lab_results.json", 'w', encoding="utf-8") as output_file:
         output_file.write(lab_results)
 
     return lab_results

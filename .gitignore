@@ -3,3 +3,5 @@ __pycache__
 /dev
 *.db
 debug/*.json
+mismatched_lab_results.csv
+matched_lab_results.json

@@ -21,7 +21,7 @@ def verify_limbach_results(lab_results, cfg):
         try:
             patient_mismatch_reason = verify_patient(lab_result, cu, cfg)
         except TypeError:
-            patient_mismatch_reason = f"TypeError occured! -> ANR {lab_result["anr"]} not in LIS db?"
+            patient_mismatch_reason = f"TypeError occured! -> ANR {lab_result['anr']} not in LIS db?"
         except sqlite3.OperationalError:
             patient_mismatch_reason = "sqlite3.OperationalError occured -> no ANR found during extract_limbach_pdf.py!"
         except (AttributeError, KeyError) as e:
@@ -102,10 +102,10 @@ def verify_parameters(lab_result, cu, cfg):
             get_parameter_from_db(cfg["attributes"]["parameter"], lab_result["anr"],
                                   cu, cfg["parameters"][parameter["parameter"]]["name"])
         except TypeError:
-            reason = f"TypeError: {parameter["parameter"]} exists in config.json, but is not ordered in LIS!"
+            reason = f"TypeError: {parameter['parameter']} exists in config.json, but is not ordered in LIS!"
             return reason
         except KeyError:
-            reason = f"KeyError: {parameter["parameter"]} not in config.json"
+            reason = f"KeyError: {parameter['parameter']} not in config.json"
             return reason
 
         # verify unit and reference range:
@@ -136,15 +136,15 @@ def verify_parameters(lab_result, cu, cfg):
 def verify_comment(parameter, cfg):
     valid_comments = cfg["parameters"][parameter["parameter"]]["comments"]
     if not valid_comments:
-        return {'success': False, 'reason': f"No valid comments for {parameter["parameter"]} in config.json"}
+        return {'success': False, 'reason': f"No valid comments for {parameter['parameter']} in config.json"}
     try:
         for instance in range(len(valid_comments)):
             if parameter["comment"] == valid_comments[instance]["text"]:
                 return {'success': True, 'name': valid_comments[instance]["name"]}
     except KeyError:
-        return {'success': False, 'reason': f"KeyError: {valid_comments[instance]} is missing name or text key for {parameter["parameter"]} in config.json"}
+        return {'success': False, 'reason': f"KeyError: {valid_comments[instance]} is missing name or text key for {parameter['parameter']} in config.json"}
 
-    return {'success': False, 'reason': f"Comment for {parameter["parameter"]} not found in config.json"}
+    return {'success': False, 'reason': f"Comment for {parameter['parameter']} not found in config.json"}
 
 
 def get_patient_from_db(column, anr, cu):
