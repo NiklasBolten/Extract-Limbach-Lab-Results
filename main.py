@@ -15,18 +15,22 @@ def main():
         config = open("config.json", "r", encoding="utf-8")
     except FileNotFoundError:
         print("Error: config.json not found")
+        input("Press Enter to exit...")
         sys.exit(1)
     except PermissionError:
         print("Error: No permission to open config.json.")
+        input("Press Enter to exit...")
         sys.exit(1)
     except OSError as e:
         print(f"Other OS error: {e}")
+        input("Press Enter to exit...")
         sys.exit(1)
 
     try:
         cfg = json.loads(config.read())
     except json.JSONDecodeError:
         print("Error: The config file is not a valid JSON file.")
+        input("Press Enter to exit...")
         config.close()
         sys.exit(1)
 
@@ -34,8 +38,18 @@ def main():
     if input_path == "":
         print("No input file specified, using default: Befunddruck.pdf")
         input_path = "Befunddruck.pdf"
+    elif input_path[-4:] != ".pdf":
+        print("Error: The input file must be a PDF file.")
+        input("Press Enter to exit...")
+        sys.exit(1)
 
-    lab_results = extract_limbach_pdf(input_path)
+    try:
+        lab_results = extract_limbach_pdf(input_path)
+    except FileNotFoundError:
+        print(f"Error: {input_path} not found.")
+        input("Press Enter to exit...")
+        sys.exit(1)
+
     verify_limbach_results(lab_results, cfg)
 
 
