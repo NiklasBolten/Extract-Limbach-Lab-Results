@@ -3,8 +3,8 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[('limbach', 'limbach')],  # Add relative paths for assets
-    hiddenimports=[],  # Include necessary hidden imports
+    datas=[],  # Add relative paths for assets
+    hiddenimports=['limbach.extract_limbach_pdf', 'limbach.verify_limbach_results'],  # Include necessary hidden imports
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

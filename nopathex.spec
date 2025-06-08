@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 a = Analysis(
     ['main.py'],
-    pathex=['.'],
+    pathex=[],
     binaries=[],
     datas=[('limbach', 'limbach')],  # Add relative paths for assets
     hiddenimports=[],  # Include necessary hidden imports
