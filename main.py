@@ -30,7 +30,10 @@ def main():
         config.close()
         sys.exit(1)
 
-    input_path = "Befunddruck.pdf"
+    input_path = input("Name of the PDF file to extract lab results from (default: Befunddruck.pdf): ")
+    if input_path == "":
+        print("No input file specified, using default: Befunddruck.pdf")
+        input_path = "Befunddruck.pdf"
 
     lab_results = extract_limbach_pdf(input_path)
     verify_limbach_results(lab_results, cfg)
