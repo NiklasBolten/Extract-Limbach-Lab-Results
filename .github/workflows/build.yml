@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        specs: [pyinstaller.spec, nohiddenimports.spec, nodatas.spec, nopathex.spec]  # Specify the PyInstaller spec file if needed
+        specs: [pyinstaller, nohiddenimports, nodatas, nopathex]  # Specify the PyInstaller spec file if needed
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -33,10 +33,10 @@ jobs:
 
       - name: Package Application with PyInstaller
         run: |
-          pyinstaller ${{ matrix.specs }}  # Use the specified PyInstaller spec file
+          pyinstaller ${{ matrix.specs }}.spec  # Use the specified PyInstaller spec file
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-exe
+          name: ${{ matrix.specs }}-build
           path: dist/

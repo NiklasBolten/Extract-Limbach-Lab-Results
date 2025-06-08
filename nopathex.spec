@@ -4,7 +4,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('limbach', 'limbach')],  # Add relative paths for assets
-    hiddenimports=[],  # Include necessary hidden imports
+    hiddenimports=['limbach.extract_limbach_pdf', 'limbach.verify_limbach_results'],  # Include necessary hidden imports
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -42,5 +42,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='windows'
+    name='nopathex'
 )
