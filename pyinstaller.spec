@@ -1,10 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 a = Analysis(
     ['main.py'],
-    pathex=['.'],
+    pathex=[],
     binaries=[],
-    datas=[('limbach', 'limbach')],  # Add relative paths for assets
-    hiddenimports=['limbach.extract_limbach_pdf', 'limbach.verify_limbach_results'],  # Include necessary hidden imports
+    datas=[],  # Add relative paths for assets
+    hiddenimports=[],  # Include necessary hidden imports
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -19,7 +19,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='windows',  # Exported executable name
+    name='Extract_Limbach_Lab_Results',  # Exported executable name
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -42,5 +42,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='pyinstaller'
+    name='Extract_Limbach_Lab_Results'
 )
